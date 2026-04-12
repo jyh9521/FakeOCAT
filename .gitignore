@@ -20,6 +20,7 @@ captures/
 .idea/
 !.idea/codeStyles/
 !.idea/inspectionProfiles/
+.vscode/
 
 # --- Local machine config ---
 local.properties
