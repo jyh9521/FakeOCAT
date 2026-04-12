@@ -1,0 +1,45 @@
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Logs ---
+*.log
+*.tmp
+
+# --- Gradle / Android build outputs ---
+.gradle/
+.kotlin/
+build/
+app/build/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# --- Android Studio / IntelliJ ---
+*.iml
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+
+# --- Local machine config ---
+local.properties
+
+# --- Signing / secrets ---
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+keystore.properties
+google-services.json
+
+# --- Environment files ---
+.env
+.env.*
+!.env.example
+
+# --- Test / coverage / reports ---
+**/test-results/
+**/outputs/
+**/reports/
+
