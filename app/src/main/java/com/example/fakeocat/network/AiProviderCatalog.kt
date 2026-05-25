@@ -33,14 +33,14 @@ object AiProviderCatalog {
         AiProviderInfo(
             id = "gemini",
             displayName = "Gemini",
-            model = "gemini-3.1-flash-lite-preview",
+            model = "gemini-2.5-flash",
             authScheme = AiAuthScheme.GeminiApiKeyQuery,
             chatCompletionsUrl = null
         ),
         AiProviderInfo(
             id = "grok",
             displayName = "Grok（xAI）",
-            model = "grok-4-1-fast",
+            model = "grok-3-mini",
             authScheme = AiAuthScheme.BearerToken,
             chatCompletionsUrl = "https://api.x.ai/v1/chat/completions"
         ),
@@ -54,21 +54,14 @@ object AiProviderCatalog {
         AiProviderInfo(
             id = "deepseek",
             displayName = "DeepSeek",
-            model = "deepseek-v3.2",
+            model = "deepseek-chat",
             authScheme = AiAuthScheme.BearerToken,
             chatCompletionsUrl = "https://api.deepseek.com/v1/chat/completions"
         ),
         AiProviderInfo(
-            id = "doubao",
-            displayName = "字节豆包",
-            model = "doubao-lite-128k",
-            authScheme = AiAuthScheme.BearerToken,
-            chatCompletionsUrl = "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
-        ),
-        AiProviderInfo(
             id = "qwen",
             displayName = "阿里千问",
-            model = "qwen-turbo-latest",
+            model = "qwen-mt-lite",
             authScheme = AiAuthScheme.BearerToken,
             chatCompletionsUrl = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
         ),

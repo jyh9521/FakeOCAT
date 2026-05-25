@@ -5,7 +5,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -25,7 +24,7 @@ sealed class Screen(val route: String) {
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    chatViewModel: ChatViewModel = viewModel()
+    chatViewModel: ChatViewModel
 ) {
     NavHost(
         navController = navController,
@@ -58,9 +57,9 @@ fun AppNavigation(
         composable(Screen.Chat.route) {
             ChatScreen(
                 viewModel = chatViewModel,
-                onNavigateToHistory = { navController.navigate(Screen.History.route) },
-                onNavigateToBookmarks = { navController.navigate(Screen.Bookmarks.route) },
-                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
+                onNavigateToHistory = { navController.navigate(Screen.History.route) { launchSingleTop = true } },
+                onNavigateToBookmarks = { navController.navigate(Screen.Bookmarks.route) { launchSingleTop = true } },
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) { launchSingleTop = true } }
             )
         }
         composable(Screen.History.route) {

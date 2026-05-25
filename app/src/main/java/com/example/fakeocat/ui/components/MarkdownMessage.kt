@@ -38,12 +38,22 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.material3.Icon
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.style.TextOverflow
 import kotlin.math.max
 
 private const val URL_ANNOTATION_TAG = "url"
+
+/** 发音标记正则：匹配 [词条](读音|IPA|可选语言) 格式，可选被 ** 包裹 */
+private val PRON_REGEX = Regex(
+    "(\\*\\*)?\\s*\\[(.*?)\\]\\((.*?)\\|(.*?)(?:\\|(.*?))?\\)\\s*(\\*\\*)?"
+)
+
+/** 行内 Markdown 样式正则（提升为常量避免每次重组编译） */
+private val BOLD_REGEX = Regex("\\*\\*.*?\\*\\*")
+private val ITALIC_REGEX = Regex("(?<!\\*)\\*.*?\\*(?!\\*)")
+private val CODE_REGEX = Regex("`.*?`")
 
 @Composable
 fun MarkdownMessage(
@@ -53,7 +63,6 @@ fun MarkdownMessage(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(0.dp)
 ) {
-    val pronRegex = Regex("(\\*\\*)?\\s*\\[(.*?)\\]\\((.*?)\\|(.*?)(?:\\|(.*?))?\\)\\s*(\\*\\*)?")
     val lines = text.lines()
 
     Column(
@@ -104,18 +113,18 @@ fun MarkdownMessage(
                     )
                 }
 
-                trimmed.startsWith("###### ") -> MarkdownLine(trimmed.removePrefix("###### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 6)
-                trimmed.startsWith("##### ") -> MarkdownLine(trimmed.removePrefix("##### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 5)
-                trimmed.startsWith("#### ") -> MarkdownLine(trimmed.removePrefix("#### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 4)
-                trimmed.startsWith("### ") -> MarkdownLine(trimmed.removePrefix("### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 3)
-                trimmed.startsWith("## ") -> MarkdownLine(trimmed.removePrefix("## "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 2)
-                trimmed.startsWith("# ") -> MarkdownLine(trimmed.removePrefix("# "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 1)
+                trimmed.startsWith("###### ") -> MarkdownLine(trimmed.removePrefix("###### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 6)
+                trimmed.startsWith("##### ") -> MarkdownLine(trimmed.removePrefix("##### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 5)
+                trimmed.startsWith("#### ") -> MarkdownLine(trimmed.removePrefix("#### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 4)
+                trimmed.startsWith("### ") -> MarkdownLine(trimmed.removePrefix("### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 3)
+                trimmed.startsWith("## ") -> MarkdownLine(trimmed.removePrefix("## "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 2)
+                trimmed.startsWith("# ") -> MarkdownLine(trimmed.removePrefix("# "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 1)
 
                 trimmed.startsWith("* ") || trimmed.startsWith("- ") || trimmed.startsWith("+ ") -> {
                     val content = trimmed.drop(2)
                     Row(modifier = Modifier.padding(start = 8.dp)) {
                         Text("• ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        MarkdownLine(content, isUser, onSpeak, pronRegex)
+                        MarkdownLine(content, isUser, onSpeak, PRON_REGEX)
                     }
                 }
 
@@ -125,7 +134,7 @@ fun MarkdownMessage(
                     val content = match?.groups?.get(2)?.value ?: ""
                     Row(modifier = Modifier.padding(start = 8.dp)) {
                         Text("$prefix ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        MarkdownLine(content, isUser, onSpeak, pronRegex)
+                        MarkdownLine(content, isUser, onSpeak, PRON_REGEX)
                     }
                 }
 
@@ -137,11 +146,11 @@ fun MarkdownMessage(
                             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                             .padding(start = 8.dp, top = 4.dp, bottom = 4.dp, end = 8.dp)
                     ) {
-                        MarkdownLine(content, isUser, onSpeak, pronRegex)
+                        MarkdownLine(content, isUser, onSpeak, PRON_REGEX)
                     }
                 }
 
-                else -> MarkdownLine(rawLine, isUser, onSpeak, pronRegex)
+                else -> MarkdownLine(rawLine, isUser, onSpeak, PRON_REGEX)
             }
         }
 
@@ -192,9 +201,15 @@ private fun MarkdownLine(
     isHeader: Boolean = false,
     headerLevel: Int = 0
 ) {
-    val boldRanges = Regex("\\*\\*.*?\\*\\*").findAll(text).map { it.range }.toList()
-    val italicRanges = Regex("(?<!\\*)\\*.*?\\*(?!\\*)").findAll(text).map { it.range }.toList()
-    val codeRanges = Regex("`.*?`").findAll(text).map { it.range }.toList()
+    val boldRanges = remember(text) {
+        BOLD_REGEX.findAll(text).map { it.range }.toList()
+    }
+    val italicRanges = remember(text) {
+        ITALIC_REGEX.findAll(text).map { it.range }.toList()
+    }
+    val codeRanges = remember(text) {
+        CODE_REGEX.findAll(text).map { it.range }.toList()
+    }
 
     fun isPosStyled(pos: Int): Triple<Boolean, Boolean, Boolean> {
         val isBold = boldRanges.any { pos in it }
@@ -214,7 +229,7 @@ private fun MarkdownLine(
         verticalArrangement = Arrangement.Center
     ) {
         var lastIndex = 0
-        pronRegex.findAll(text).forEach { match ->
+        PRON_REGEX.findAll(text).forEach { match ->
             val plainText = text.substring(lastIndex, match.range.first)
             if (plainText.isNotEmpty()) {
                 val (isBold, isItalic, isCode) = isPosStyled((match.range.first - 1).coerceAtLeast(0))

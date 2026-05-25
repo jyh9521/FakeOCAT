@@ -16,16 +16,21 @@ import kotlinx.coroutines.flow.map
 
 val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "settings")
 
-class PreferencesManager(private val context: Context) {
+class PreferencesManager(
+    private val context: Context
+) {
 
-    private val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-    private val encryptedPrefs = EncryptedSharedPreferences.create(
-        "secure_settings",
-        masterKeyAlias,
-        context,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    // 使用 lazy 延迟初始化，避免在主线程构造时阻塞
+    private val encryptedPrefs: android.content.SharedPreferences by lazy {
+        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        EncryptedSharedPreferences.create(
+            "secure_settings",
+            masterKeyAlias,
+            context,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
 
     companion object {
         private const val TAG = "PreferencesManager"
@@ -52,31 +57,9 @@ class PreferencesManager(private val context: Context) {
     val targetLanguageFlow: Flow<String> = context.dataStore.data.map { it[TARGET_LANGUAGE] ?: "ja" }
 
     fun apiKeyFlowFor(provider: String): Flow<String> {
-        val dynamicKey = stringPreferencesKey("api_key_$provider")
-        val legacyKey = when (provider) {
-            "anthropic" -> API_KEY_ANTHROPIC
-            "gemini" -> API_KEY_GEMINI
-            "deepseek" -> API_KEY_DEEPSEEK
-            "grok" -> API_KEY_GROK
-            "openai" -> API_KEY_OPENAI
-            else -> null
-        }
-        return context.dataStore.data.map { 
-            var k = it[dynamicKey] ?: ""
-
-            if (k.isEmpty() && legacyKey != null) {
-                k = it[legacyKey] ?: ""
-            }
-            
-            // 如果 DataStore 为空，则回退到 EncryptedSharedPreferences
-            if (k.isEmpty()) {
-                k = encryptedPrefs.getString("api_key_$provider", "") ?: ""
-                if (k.isNotEmpty()) {
-                    Log.d(TAG, "DataStore empty for $provider, recovered from EncryptedPrefs")
-                    // 若可行则主动回写 DataStore（在 setApiKeyFor 中完成）
-                }
-            }
-            
+        // 仅从 EncryptedSharedPreferences 读取 API Key（不在 DataStore 中存储明文 Key）
+        return context.dataStore.data.map {
+            val k = encryptedPrefs.getString("api_key_$provider", "") ?: ""
             Log.d(TAG, "Reading API Key for $provider: ${if (k.isEmpty()) "EMPTY" else "EXISTS(length=${k.length})"}")
             k
         }
@@ -87,29 +70,8 @@ class PreferencesManager(private val context: Context) {
      * 返回 (ProviderName, Key) 二元组。
      */
     suspend fun findAnyAvailableKey(): Pair<String, String>? {
-        // 先尝试 DataStore
-        val data = context.dataStore.data.first()
         val providers = AiProviderCatalog.providers.map { it.id }
-        
-        for (provider in providers) {
-            val dynamicKey = data[stringPreferencesKey("api_key_$provider")]
-            val legacyKey = when (provider) {
-                "anthropic" -> data[API_KEY_ANTHROPIC]
-                "gemini" -> data[API_KEY_GEMINI]
-                "deepseek" -> data[API_KEY_DEEPSEEK]
-                "grok" -> data[API_KEY_GROK]
-                "openai" -> data[API_KEY_OPENAI]
-                else -> null
-            }
-
-            val dsKey = dynamicKey ?: legacyKey
-            if (!dsKey.isNullOrBlank()) {
-                Log.d(TAG, "Fallback: Found available key in DataStore for $provider")
-                return provider to dsKey
-            }
-        }
-        
-        // 再尝试 EncryptedPrefs 作为第二级回退
+        // 仅从 EncryptedSharedPreferences 查找可用密钥
         for (provider in providers) {
             val epKey = encryptedPrefs.getString("api_key_$provider", "")
             if (!epKey.isNullOrBlank()) {
@@ -117,7 +79,6 @@ class PreferencesManager(private val context: Context) {
                 return provider to epKey
             }
         }
-        
         return null
     }
 
@@ -127,26 +88,9 @@ class PreferencesManager(private val context: Context) {
     }
 
     suspend fun setApiKeyFor(provider: String, apiKey: String) {
-        Log.d(TAG, "Setting API Key for $provider (Persistent + Secure)")
-        
-        // 1. 保存到 EncryptedSharedPreferences（可用时使用硬件保护）
+        Log.d(TAG, "Setting API Key for $provider (Secure only)")
+        // 仅保存到 EncryptedSharedPreferences（使用硬件保护加密存储）
         encryptedPrefs.edit().putString("api_key_$provider", apiKey).apply()
-        
-        // 2. 保存到 DataStore（供 UI Flow 使用）
-        val dynamicKey = stringPreferencesKey("api_key_$provider")
-        context.dataStore.edit { it[dynamicKey] = apiKey }
-
-        val legacyKey = when (provider) {
-            "anthropic" -> API_KEY_ANTHROPIC
-            "gemini" -> API_KEY_GEMINI
-            "deepseek" -> API_KEY_DEEPSEEK
-            "grok" -> API_KEY_GROK
-            "openai" -> API_KEY_OPENAI
-            else -> null
-        }
-        if (legacyKey != null) {
-            context.dataStore.edit { it[legacyKey] = apiKey }
-        }
     }
 
     suspend fun setThemeMode(mode: String) {
@@ -169,4 +113,5 @@ class PreferencesManager(private val context: Context) {
     suspend fun setTargetLanguage(lang: String) {
         context.dataStore.edit { it[TARGET_LANGUAGE] = lang }
     }
+
 }

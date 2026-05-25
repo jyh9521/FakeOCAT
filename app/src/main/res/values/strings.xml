@@ -63,4 +63,6 @@
     <string name="lang_hebrew">Hebrew</string>
     <string name="error_no_api_key">API Key is missing! Set it in Settings.</string>
     <string name="error_network">Network error. Please try again.</string>
+    <string name="bookmarked">Bookmarked</string>
+    <string name="bookmark_removed">Removed bookmark</string>
 </resources>

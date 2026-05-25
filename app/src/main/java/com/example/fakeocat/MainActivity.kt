@@ -10,14 +10,10 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.fakeocat.ui.AppNavigation
@@ -26,23 +22,29 @@ import com.example.fakeocat.ui.viewmodel.ChatViewModel
 import java.util.Locale
 
 class MainActivity : ComponentActivity() {
+    private var appliedLangCode: String = "system"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        // 提前通知系统冷启动完成，避免三星 One UI 等设备因 Compose 首次
+        // 组合（含 Vulkan 着色器 JIT 编译）耗时触发冷启动 ANR 对话框
+        reportFullyDrawn()
+
+        val currentLang = appliedLangCode
         setContent {
-            val chatViewModel: ChatViewModel = viewModel()
-            val themeMode by chatViewModel.themeMode.collectAsState()
+            val chatViewModel: ChatViewModel = viewModel(
+                factory = ChatViewModel.Factory(application)
+            )
             val appLang by chatViewModel.appLanguage.collectAsState()
+            val themeMode by chatViewModel.themeMode.collectAsState()
 
-            // 当 appLang 变化时应用对应语言环境
-            val context = LocalContext.current
-            var currentLocale by remember { mutableStateOf(appLang) }
-
+            // 用户切换界面语言后立即 recreate Activity，
+            // 使 attachBaseContext 重新应用新语言
             LaunchedEffect(appLang) {
-                if (appLang != currentLocale) {
-                    currentLocale = appLang
-                    // 重新创建 Activity 以应用新的语言环境
-                    (context as? MainActivity)?.recreate()
+                if (appLang != currentLang) {
+                    recreate()
                 }
             }
 
@@ -68,9 +70,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        // 读取已保存的语言偏好并应用语言环境
         val prefs = newBase.getSharedPreferences("settings_locale", Context.MODE_PRIVATE)
         val langCode = prefs.getString("app_language", "system") ?: "system"
+        appliedLangCode = langCode
         val context = if (langCode != "system") {
             val locale = Locale.forLanguageTag(langCode)
             Locale.setDefault(locale)

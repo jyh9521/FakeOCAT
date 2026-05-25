@@ -12,12 +12,11 @@ class AiProviderCatalogTest {
         val expected = listOf(
             "openai" to "gpt-5.4-mini",
             "anthropic" to "claude-haiku-4-5",
-            "gemini" to "gemini-3.1-flash-lite-preview",
-            "grok" to "grok-4-1-fast",
+            "gemini" to "gemini-2.5-flash",
+            "grok" to "grok-3-mini",
             "mimo" to "mimo-v2-flash",
-            "deepseek" to "deepseek-v3.2",
-            "doubao" to "doubao-lite-128k",
-            "qwen" to "qwen-turbo-latest",
+            "deepseek" to "deepseek-chat",
+            "qwen" to "qwen-mt-lite",
             "hunyuan" to "hunyuan-lite",
             "ernie" to "ernie-speed-128k",
             "zhipu" to "glm-4.7-flash",
@@ -35,7 +34,6 @@ class AiProviderCatalogTest {
         assertNotNull(byId["openai"]?.chatCompletionsUrl)
         assertNotNull(byId["deepseek"]?.chatCompletionsUrl)
         assertNotNull(byId["grok"]?.chatCompletionsUrl)
-        assertNotNull(byId["doubao"]?.chatCompletionsUrl)
         assertNotNull(byId["qwen"]?.chatCompletionsUrl)
         assertNotNull(byId["zhipu"]?.chatCompletionsUrl)
         assertNotNull(byId["kimi"]?.chatCompletionsUrl)
@@ -52,7 +50,7 @@ class AiProviderCatalogTest {
     fun ids_are_unique() {
         val ids = AiProviderCatalog.providers.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
-        assertTrue(ids.size == 13)
+        assertTrue(ids.size == 12)
     }
 }
 

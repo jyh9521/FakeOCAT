@@ -12,15 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = PrimaryLight,
+    secondary = SecondaryLight,
+    tertiary = TertiaryLight
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = PrimaryDark,
+    secondary = SecondaryDark,
+    tertiary = TertiaryDark
 
     /* 可按需覆盖的其他默认颜色
     background = Color(0xFFFFFBFE),

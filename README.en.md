@@ -2,77 +2,102 @@
 
 **Languages:** [中文](README.md) | [日本語](README.ja.md) | English (current)
 
-FakeOCAT is an Android language-learning chat app created as a personal, hobby-driven recreation of [OCAT](https://ocat.app/).
+FakeOCAT is an AI-powered oral English tutor Android app, inspired by [OCAT](https://ocat.app/) and developed as a personal hobby project. The core philosophy is BYOK (Bring Your Own Key) — users only need to supply their own API key to unlock all features, with no subscription fees required.
 
-The motivation is simple: I did not want to pay an extra software subscription, so I built an app with similar functionality myself. The core design of this project is BYOK (Bring Your Own Key), which means you must provide your own API key to use it.
+---
 
-✨ Core Features
+## 📱 Features
 
-· Multi-model support: built-in integrations for 13 AI providers, with free switching.  
-· Language-learning assistance: pronunciation support to improve speaking and listening experience.  
-· Content management: complete chat history and key-content bookmarking features.
+- **🌐 22 UI Languages** — The app interface supports Simplified Chinese, English, 日本語, 한국어, Français, Deutsch, Español, Português, Italiano, Nederlands, Svenska, Polski, Čeština, Русский, العربية, हिन्दी, Bahasa Indonesia, עברית, Ελληνικά, Türkçe, Tiếng Việt, and ไทย. Switching takes effect instantly.
+- **🤖 12 AI Providers** — Built-in API adapters for OpenAI, Anthropic (Claude), Google (Gemini), Grok (xAI), DeepSeek, Tongyi Qianwen, Tencent Hunyuan, Wenxin Yiyan, Zhipu (GLM), Kimi (Moonshot), MiniMax, and Baichuan. Switch freely at any time.
+- **📖 Three Learning Modes** — "How to Say in X" (CN→Foreign translation), "What Does It Mean" (Foreign→CN explanation), and "Free Chat" (open-ended conversation), covering both input and output practice.
+- **🔊 TTS Text-to-Speech** — AI replies can be played back as speech. Tap any sentence to hear it pronounced, enhancing listening and speaking skills.
+- **🔖 Bookmarks** — One-tap bookmarking of important conversation snippets. Bookmarks and chat history are stored independently — clearing history never removes bookmarked content.
+- **📜 Chat History** — Full conversation history with timestamp-based browsing and session context restoration.
+- **🎨 Material3 Theme** — Built with Jetpack Compose Material3, supporting light/dark theme switching.
 
-⚠️ Disclaimer & Feedback
+---
 
-Although the app includes support code for 13 providers, I currently only have a Gemini API key due to personal constraints. Therefore, only Gemini has been fully tested and is guaranteed to work in this project. The other 12 provider integrations are unverified implementations. If you encounter bugs when using other APIs, issues and PRs are very welcome.
+## 🛠 Tech Stack
 
-## Features
+| Category | Technology |
+|----------|-------------|
+| Language | Kotlin |
+| UI Framework | Jetpack Compose + Material3 |
+| Navigation | Navigation Compose |
+| Networking | OkHttp + SSE (streaming responses) |
+| Persistence | DataStore (preferences) + SQLite (Room-style) |
+| Async | Kotlin Coroutines + Flow |
+| Testing | JUnit + MockK + Turbine + MockWebServer |
+| Build | Gradle (Kotlin DSL) + Version Catalog |
 
-- Multi-provider API integration (OpenAI, Anthropic, Gemini, Grok, DeepSeek, Doubao, Qwen, Hunyuan, ERNIE, Zhipu, Kimi, MiniMax, etc.)
-- Three learning modes: `HowToSay`, `WhatMeans`, `FreeChat`
-- Markdown message rendering with clickable pronunciation chips
-- Text-to-Speech (TTS)
-- Decoupled history/bookmark storage (clearing history does not remove bookmarks)
-- Theme and app-language switching
+---
 
-## Requirements
+## 📸 Screenshots
 
-- Android Studio (latest stable recommended)
-- JDK 17+
-- Android SDK (managed by Android Studio)
 
-## Quick Start
 
-1. Clone the repository and open it in Android Studio.
-2. Wait for Gradle sync.
-3. Run the `app` module on a device or emulator.
-4. In Settings, choose a provider and set your API key.
+---
 
-Optional CLI build:
+## 🚀 Build Guide
 
-```powershell
-cd C:\Users\noway\AndroidStudioProjects\FakeOCAT
-.\gradlew.bat assembleDebug
+### Requirements
+
+- **Android Studio** — Latest stable recommended (Ladybug or newer)
+- **JDK 17+** — The project has `gradle.properties` configured to point to Eclipse Adoptium JDK 25; adjust or remove this path for your local environment
+- **Android SDK** — Managed automatically by Android Studio
+
+### Quick Start
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/FakeOCAT.git
+
+# 2. Open the project directory in Android Studio and wait for Gradle sync
+
+# 3. Connect a device or launch an emulator, then click Run
+
+# 4. On first launch, go to Settings → select an AI provider → enter your API key
 ```
 
-## Tests
+### Command-Line Build
 
-```powershell
-cd C:\Users\noway\AndroidStudioProjects\FakeOCAT
-.\gradlew.bat testDebugUnitTest
+```bash
+# Debug build
+./gradlew assembleDebug
+
+# Run unit tests
+./gradlew testDebugUnitTest
 ```
 
-## Project Structure
+---
 
-- `app/src/main/java/com/example/fakeocat/ui/`: screens and navigation
-- `app/src/main/java/com/example/fakeocat/ui/viewmodel/`: state and orchestration
-- `app/src/main/java/com/example/fakeocat/network/`: LLM/TTS networking
-- `app/src/main/java/com/example/fakeocat/data/`: preferences and database
-- `docs/`: design and integration documents
+## 📁 Project Structure
 
-## Open Source Notes
+```
+FakeOCAT/
+├── app/src/main/java/com/example/fakeocat/
+│   ├── ui/                        # Compose UI layer
+│   │   ├── screens/               # Screens: Chat / Bookmarks / History / Settings
+│   │   ├── components/            # Reusable components: MarkdownMessage etc.
+│   │   ├── viewmodel/             # ViewModels + business orchestration
+│   │   └── theme/                 # Material3 theme configuration
+│   ├── network/                   # Network layer: LLM client / TTS / SSE streaming parsers
+│   └── data/                      # Data layer: DataStore preferences / SQLite database
+├── app/src/main/res/              # Resources (includes strings.xml for 22 languages)
+├── app/src/test/                  # Unit tests
+├── app/src/androidTest/           # Instrumented tests (Android device tests)
+└── docs/                          # Design and integration documents
+```
 
-- Do not commit secrets (API keys, signing files)
-- `.gitignore` is configured to exclude local/generated artifacts
+---
 
-## Multilingual Maintenance
+## ⚠️ Disclaimer
 
-- Canonical document: `README.md` (Chinese)
-- Additional language docs: `README.ja.md`, `README.en.md`
-- Suggested workflow: update Chinese first, then sync Japanese and English
-- If translation lags behind, treat the Chinese README as source of truth and submit a PR update
+Although the app includes integration code for 12 providers, due to personal constraints only **Gemini** has been fully tested and is guaranteed to work. The other 11 provider adapters are unverified implementations written without access to actual API keys. If you encounter issues with other providers, issues and pull requests are welcome.
 
-## License
+---
 
-This project is licensed under the [MIT License](LICENSE).
+## 📄 License
 
+This project is open-sourced under the [MIT License](LICENSE).

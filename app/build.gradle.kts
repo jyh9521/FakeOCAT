@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -16,11 +15,16 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        lint {
+            checkReleaseBuilds = true
+            abortOnError = true
+        }
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -31,11 +35,9 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -51,21 +53,31 @@ dependencies {
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material.icons.extended)
 
-    // Navigation & ViewModels
+    // 导航与 ViewModel
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     
-    // DataStore (Preferences)
+    // DataStore（偏好设置）
     implementation(libs.androidx.datastore.preferences)
     
-    // Coroutines
+    // 协程
     implementation(libs.kotlinx.coroutines.android)
     
-    // Network (OkHttp + SSE)
+    // 网络（OkHttp + SSE）
     implementation(libs.okhttp3.okhttp)
     implementation(libs.okhttp3.sse)
 
     testImplementation(libs.junit)
+    // 单元测试中使用真实的 org.json 实现（Android 的 json stubs 不支持 optString 等方法）
+    testImplementation(libs.json)
+    // 协程测试：StandardTestDispatcher、runTest 等
+    testImplementation(libs.kotlinx.coroutines.test)
+    // Turbine：StateFlow/Flow 测试断言库
+    testImplementation(libs.turbine)
+    // MockK：Kotlin 友好的 mock 框架
+    testImplementation(libs.mockk)
+    // MockWebServer：模拟 HTTP 服务器，测试 LlmClient 网络请求
+    testImplementation(libs.okhttp3.mockwebserver)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))

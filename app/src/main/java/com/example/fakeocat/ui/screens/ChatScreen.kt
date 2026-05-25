@@ -90,7 +90,13 @@ import com.example.fakeocat.R
 import com.example.fakeocat.data.db.entity.MessageEntity
 import com.example.fakeocat.ui.viewmodel.ChatUiState
 import com.example.fakeocat.ui.viewmodel.ChatViewModel
+import com.example.fakeocat.ui.viewmodel.PromptBuilder
 import kotlinx.coroutines.launch
+
+/** 发音标记正则：匹配 [词条](读音|IPA|可选语言) 格式，可选被 ** 包裹 */
+private val PRON_REGEX = Regex(
+    "(\\*\\*)?\\s*\\[(.*?)\\]\\((.*?)\\|(.*?)(?:\\|(.*?))?\\)\\s*(\\*\\*)?"
+)
 
 @Composable
 fun FormattedMessageText(
@@ -98,15 +104,6 @@ fun FormattedMessageText(
     isUser: Boolean,
     onSpeak: (String, String?) -> Unit
 ) {
-    // 自定义发音标记正则：可选地被 ** 或 * 包裹，并允许包含空格
-    // 第 1 组：可选前缀样式（**、*）
-    // 第 2 组：词条（可点击单词）
-    // 第 3 组：读音
-    // 第 4 组：IPA
-    // 第 5 组：可选语言代码
-    // 第 6 组：可选后缀样式（**、*）
-    val pronRegex = Regex("(\\*\\*)?\\s*\\[(.*?)\\]\\((.*?)\\|(.*?)(?:\\|(.*?))?\\)\\s*(\\*\\*)?")
-    
     // 1. 先把消息按行拆分成块级元素。
     val lines = text.lines()
     
@@ -120,18 +117,18 @@ fun FormattedMessageText(
             // 2. 处理块级元素（标题、列表、代码块）
             val trimmed = line.trimStart()
             when {
-                trimmed.startsWith("###### ") -> MarkdownLine(trimmed.removePrefix("###### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 6)
-                trimmed.startsWith("##### ") -> MarkdownLine(trimmed.removePrefix("##### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 5)
-                trimmed.startsWith("#### ") -> MarkdownLine(trimmed.removePrefix("#### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 4)
-                trimmed.startsWith("### ") -> MarkdownLine(trimmed.removePrefix("### "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 3)
-                trimmed.startsWith("## ") -> MarkdownLine(trimmed.removePrefix("## "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 2)
-                trimmed.startsWith("# ") -> MarkdownLine(trimmed.removePrefix("# "), isUser, onSpeak, pronRegex, isHeader = true, headerLevel = 1)
+                trimmed.startsWith("###### ") -> MarkdownLine(trimmed.removePrefix("###### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 6)
+                trimmed.startsWith("##### ") -> MarkdownLine(trimmed.removePrefix("##### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 5)
+                trimmed.startsWith("#### ") -> MarkdownLine(trimmed.removePrefix("#### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 4)
+                trimmed.startsWith("### ") -> MarkdownLine(trimmed.removePrefix("### "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 3)
+                trimmed.startsWith("## ") -> MarkdownLine(trimmed.removePrefix("## "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 2)
+                trimmed.startsWith("# ") -> MarkdownLine(trimmed.removePrefix("# "), isUser, onSpeak, PRON_REGEX, isHeader = true, headerLevel = 1)
                 
                 trimmed.startsWith("* ") || trimmed.startsWith("- ") -> {
                     val content = trimmed.substring(2)
                     Row(modifier = Modifier.padding(start = 8.dp)) {
                         Text("• ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        MarkdownLine(content, isUser, onSpeak, pronRegex)
+                        MarkdownLine(content, isUser, onSpeak, PRON_REGEX)
                     }
                 }
                 trimmed.matches(Regex("^\\d+\\.\\s.*")) -> {
@@ -140,7 +137,7 @@ fun FormattedMessageText(
                     val content = match?.groups?.get(2)?.value ?: ""
                     Row(modifier = Modifier.padding(start = 8.dp)) {
                         Text("$prefix ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-                        MarkdownLine(content, isUser, onSpeak, pronRegex)
+                        MarkdownLine(content, isUser, onSpeak, PRON_REGEX)
                     }
                 }
                 trimmed.startsWith("> ") -> {
@@ -150,11 +147,11 @@ fun FormattedMessageText(
                         .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
                         .padding(start = 8.dp, top = 4.dp, bottom = 4.dp)
                     ) {
-                        MarkdownLine(content, isUser, onSpeak, pronRegex)
+                        MarkdownLine(content, isUser, onSpeak, PRON_REGEX)
                     }
                 }
                 else -> {
-                    MarkdownLine(line, isUser, onSpeak, pronRegex)
+                    MarkdownLine(line, isUser, onSpeak, PRON_REGEX)
                 }
             }
         }
@@ -190,7 +187,7 @@ fun MarkdownLine(
         verticalArrangement = Arrangement.Center
     ) {
         var lastIndex = 0
-        pronRegex.findAll(text).forEach { match ->
+        PRON_REGEX.findAll(text).forEach { match ->
             // 匹配项之前的普通文本
             val plainText = text.substring(lastIndex, match.range.first)
             if (plainText.isNotEmpty()) {
@@ -367,7 +364,7 @@ fun ChatScreen(
 
     val effectiveLang = howToSayLang ?: targetLang
 
-    LaunchedEffect(messages.size, uiState) {
+    LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
@@ -379,7 +376,7 @@ fun ChatScreen(
         }
     }
 
-    val targetLangName = ChatViewModel.langDisplayName(effectiveLang)
+    val targetLangName = PromptBuilder.langDisplayName(effectiveLang)
     val howToSayLabel = stringResource(R.string.mode_how_to_say, targetLangName)
 
     // 语言选择器状态
@@ -614,17 +611,22 @@ fun ChatScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(messages, key = { it.id }) { message ->
+                // 在 @Composable 上下文中预解析字符串资源，供非 Composable lambda 捕获使用
+                val bookmarkRemovedText = stringResource(R.string.bookmark_removed)
+                val bookmarkedText = stringResource(R.string.bookmarked)
+                val copiedToClipboardText = stringResource(R.string.copied_to_clipboard)
                 MessageBubble(
                     message = message,
-                    onToggleBookmark = { 
+                    onToggleBookmark = {
                         viewModel.toggleBookmark(message)
+                        val msg = if (message.isBookmarked) bookmarkRemovedText else bookmarkedText
                         scope.launch {
-                            snackbarHostState.showSnackbar(if (message.isBookmarked) "已取消收藏" else "已收藏")
+                            snackbarHostState.showSnackbar(msg)
                         }
                     },
                     onCopy = {
                         clipboardManager.setText(AnnotatedString(message.text))
-                        scope.launch { snackbarHostState.showSnackbar("已复制到剪贴板") }
+                        scope.launch { snackbarHostState.showSnackbar(copiedToClipboardText) }
                     },
                     onSpeak = { text, lang -> viewModel.speak(text, lang) }
                 )
@@ -712,7 +714,7 @@ fun MessageBubble(
                     onDismissRequest = { showMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text("复制文本") },
+                        text = { Text(stringResource(R.string.action_copy)) },
                         onClick = {
                             onCopy()
                             showMenu = false
@@ -720,7 +722,7 @@ fun MessageBubble(
                         leadingIcon = { Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp)) }
                     )
                     DropdownMenuItem(
-                        text = { Text(if (message.isBookmarked) "取消收藏" else "收藏消息") },
+                        text = { Text(if (message.isBookmarked) stringResource(R.string.action_unbookmark) else stringResource(R.string.action_bookmark)) },
                         onClick = {
                             onToggleBookmark()
                             showMenu = false

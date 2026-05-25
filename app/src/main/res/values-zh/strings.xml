@@ -62,4 +62,6 @@
     <string name="lang_hebrew">希伯来语</string>
     <string name="error_no_api_key">缺少 API 密钥！请在设置中配置。</string>
     <string name="error_network">网络错误，请重试。</string>
+    <string name="bookmarked">已收藏</string>
+    <string name="bookmark_removed">已取消收藏</string>
 </resources>

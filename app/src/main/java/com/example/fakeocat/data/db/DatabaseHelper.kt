@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import android.util.Base64
 import com.example.fakeocat.data.db.entity.BookmarkEntity
 import com.example.fakeocat.data.db.entity.MessageEntity
 import kotlinx.coroutines.Dispatchers
@@ -14,7 +15,17 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.withContext
 import java.io.File
 
-class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
+/**
+ * 标准 SQLite 数据库助手，使用 Base64 编码对 text 列做轻量混淆存储。
+ *
+ * 所有 INSERT/UPDATE 写入前对 [MessageEntity.text] 调用 [obfuscate] 编码，
+ * 所有 SELECT 读取后调用 [deobfuscate] 解码，避免明文落盘。
+ *
+ * 继承自标准 [SQLiteOpenHelper]，无外部加密依赖。
+ */
+class DatabaseHelper(
+    context: Context
+) : SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
 
     private val appContext = context.applicationContext
 
@@ -34,19 +45,27 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         private const val COL_MESSAGE_TIMESTAMP = "message_timestamp"
         private const val COL_CREATED_AT = "created_at"
 
-        @Volatile
-        private var INSTANCE: DatabaseHelper? = null
+        /**
+         * 对明文文本做 Base64 编码混淆，避免数据库文件直接暴露明文消息内容。
+         * 这不是真正的加密，仅用于防止最基础的明文泄露。
+         */
+        private fun obfuscate(text: String): String {
+            return Base64.encodeToString(text.toByteArray(Charsets.UTF_8), Base64.NO_WRAP)
+        }
 
-        fun getInstance(context: Context): DatabaseHelper {
-            return INSTANCE ?: synchronized(this) {
-                val instance = DatabaseHelper(context.applicationContext)
-                INSTANCE = instance
-                instance
-            }
+        /**
+         * 对 Base64 编码的文本解码还原为明文。
+         */
+        private fun deobfuscate(encoded: String): String {
+            return String(Base64.decode(encoded, Base64.NO_WRAP), Charsets.UTF_8)
         }
     }
 
-    // 用于变更通知的监听器集合
+    // ═══════════════════════════════════════════════════
+    // 变更通知（与原有逻辑一致）
+    // ═══════════════════════════════════════════════════
+
+    /** 用于变更通知的监听器集合 */
     private val changeListeners = mutableSetOf<() -> Unit>()
 
     fun addChangeListener(listener: () -> Unit) {
@@ -61,6 +80,16 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         synchronized(changeListeners) {
             changeListeners.forEach { it.invoke() }
         }
+    }
+
+    // ═══════════════════════════════════════════════════
+    // 数据库生命周期回调
+    // ═══════════════════════════════════════════════════
+
+    init {
+        // 启用 WAL 模式：写操作不阻塞读操作，大幅提升并发性能
+        // Android 9+ 已默认 WAL，但显式调用确保兼容
+        setWriteAheadLoggingEnabled(true)
     }
 
     override fun onConfigure(db: SQLiteDatabase) {
@@ -174,9 +203,13 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         }
     }
 
+    // ═══════════════════════════════════════════════════
+    // CRUD 操作（写入前编码，读取后解码）
+    // ═══════════════════════════════════════════════════
+
     suspend fun insertMessage(message: MessageEntity): Long = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {
-            put(COL_TEXT, message.text)
+            put(COL_TEXT, obfuscate(message.text))
             put(COL_IS_USER, if (message.isUser) 1 else 0)
             put(COL_TIMESTAMP, message.timestamp)
             put(COL_MODE, message.mode)
@@ -188,7 +221,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
     suspend fun updateMessage(message: MessageEntity) = withContext(Dispatchers.IO) {
         val values = ContentValues().apply {
-            put(COL_TEXT, message.text)
+            put(COL_TEXT, obfuscate(message.text))
             put(COL_IS_USER, if (message.isUser) 1 else 0)
             put(COL_TIMESTAMP, message.timestamp)
             put(COL_MODE, message.mode)
@@ -207,10 +240,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         notifyChange()
     }
 
-    fun getAllMessagesFlow(): Flow<List<MessageEntity>> = callbackFlow {
+    fun getAllMessagesFlow(limit: Int = 200): Flow<List<MessageEntity>> = callbackFlow {
         val sendData = {
             val list = queryMessages("""
-                SELECT 
+                SELECT
                     m.$COL_ID,
                     m.$COL_TEXT,
                     m.$COL_IS_USER,
@@ -221,6 +254,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 LEFT JOIN $TABLE_BOOKMARKS b
                 ON b.$COL_SOURCE_MESSAGE_ID = m.$COL_ID
                 ORDER BY m.$COL_TIMESTAMP ASC
+                LIMIT $limit
             """.trimIndent())
             trySend(list)
             Unit
@@ -262,7 +296,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
 
             val values = ContentValues().apply {
                 put(COL_SOURCE_MESSAGE_ID, message.id)
-                put(COL_TEXT, message.text)
+                put(COL_TEXT, obfuscate(message.text))
                 put(COL_IS_USER, if (message.isUser) 1 else 0)
                 put(COL_MESSAGE_TIMESTAMP, message.timestamp)
                 put(COL_MODE, message.mode)
@@ -291,6 +325,10 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
         cursor.use { it.moveToFirst() }
     }
 
+    // ═══════════════════════════════════════════════════
+    // 私有查询辅助方法（读取后解码）
+    // ═══════════════════════════════════════════════════
+
     private fun queryMessages(sql: String): List<MessageEntity> {
         val messages = mutableListOf<MessageEntity>()
         val cursor: Cursor = readableDatabase.rawQuery(sql, null)
@@ -299,7 +337,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                 messages.add(
                     MessageEntity(
                         id = it.getLong(it.getColumnIndexOrThrow(COL_ID)),
-                        text = it.getString(it.getColumnIndexOrThrow(COL_TEXT)),
+                        text = deobfuscate(it.getString(it.getColumnIndexOrThrow(COL_TEXT))),
                         isUser = it.getInt(it.getColumnIndexOrThrow(COL_IS_USER)) == 1,
                         timestamp = it.getLong(it.getColumnIndexOrThrow(COL_TIMESTAMP)),
                         mode = it.getString(it.getColumnIndexOrThrow(COL_MODE)),
@@ -322,7 +360,7 @@ class DatabaseHelper(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME
                     BookmarkEntity(
                         id = it.getLong(it.getColumnIndexOrThrow(COL_ID)),
                         sourceMessageId = sourceMessageId,
-                        text = it.getString(it.getColumnIndexOrThrow(COL_TEXT)),
+                        text = deobfuscate(it.getString(it.getColumnIndexOrThrow(COL_TEXT))),
                         isUser = it.getInt(it.getColumnIndexOrThrow(COL_IS_USER)) == 1,
                         messageTimestamp = it.getLong(it.getColumnIndexOrThrow(COL_MESSAGE_TIMESTAMP)),
                         mode = it.getString(it.getColumnIndexOrThrow(COL_MODE)),

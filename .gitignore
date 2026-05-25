@@ -1,12 +1,19 @@
-# --- OS junk ---
+# --- 操作系统垃圾文件 ---
 .DS_Store
 Thumbs.db
 
-# --- Logs ---
+# --- Gemini / Roo CLI 工作目录（不入库） ---
+.geminiignore
+.roo/
+
+# --- 计划文件 ---
+plans/
+
+# --- 日志文件 ---
 *.log
 *.tmp
 
-# --- Gradle / Android build outputs ---
+# --- Gradle / Android 编译输出 ---
 .gradle/
 .kotlin/
 build/
@@ -15,6 +22,16 @@ captures/
 .externalNativeBuild/
 .cxx/
 
+# --- Android 额外构建产物 ---
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# --- 本地依赖（.jar / .aar） ---
+**/libs/*.jar
+**/libs/*.aar
+
 # --- Android Studio / IntelliJ ---
 *.iml
 .idea/
@@ -22,10 +39,10 @@ captures/
 !.idea/inspectionProfiles/
 .vscode/
 
-# --- Local machine config ---
+# --- 本地机器配置 ---
 local.properties
 
-# --- Signing / secrets ---
+# --- 签名 / 密钥 ---
 *.jks
 *.keystore
 *.p12
@@ -34,13 +51,20 @@ local.properties
 keystore.properties
 google-services.json
 
-# --- Environment files ---
+# --- 环境文件 ---
 .env
 .env.*
 !.env.example
 
-# --- Test / coverage / reports ---
+# --- 测试 / 覆盖率 / 报告 ---
 **/test-results/
 **/outputs/
 **/reports/
 
+# --- 发布产物 ---
+**/release/
+*.apk
+*.aab
+
+# --- Gradle 本地机器配置 ---
+gradle/gradle-daemon-jvm.properties

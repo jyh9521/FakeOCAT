@@ -33,6 +33,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,8 +48,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.fakeocat.R
-import com.example.fakeocat.ui.viewmodel.ChatViewModel
 import com.example.fakeocat.network.AiProviderCatalog
+import com.example.fakeocat.network.ConnectionPrewarmer
+import com.example.fakeocat.ui.viewmodel.ChatViewModel
+import com.example.fakeocat.ui.viewmodel.PromptBuilder
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -72,19 +75,17 @@ fun SettingsScreen(
     var apiKeyLoaded by remember { mutableStateOf(false) }
     var lastLoadedProvider by remember { mutableStateOf("") }
 
-    // 当服务商变化时重新加载 API Key
-    if (!apiKeyLoaded || lastLoadedProvider != selectedProvider) {
-        scope.launch {
-            apiKey = prefs.apiKeyFlowFor(selectedProvider).first()
-            apiKeyLoaded = true
-            lastLoadedProvider = selectedProvider
-        }
+    // 当服务商变化时重新加载 API Key（使用 LaunchedEffect 自动管理生命周期）
+    LaunchedEffect(selectedProvider) {
+        apiKey = prefs.apiKeyFlowFor(selectedProvider).first()
+        apiKeyLoaded = true
+        lastLoadedProvider = selectedProvider
     }
 
     val providers = AiProviderCatalog.providers.map { it.id to it.displayName }
 
-    val languages = ChatViewModel.supportedLanguages.map { 
-        it to ChatViewModel.langDisplayName(it)
+    val languages = PromptBuilder.supportedLanguages.map {
+        it to PromptBuilder.langDisplayName(it)
     }
 
     val appLanguages = listOf(
@@ -322,6 +323,9 @@ fun SettingsScreen(
                 onClick = {
                     scope.launch {
                         prefs.setApiKeyFor(selectedProvider, apiKey)
+                        // 保存后异步预热连接，降低首次请求 TTFT
+                        ConnectionPrewarmer.resetForProvider(selectedProvider)
+                        ConnectionPrewarmer.warmUp(selectedProvider, apiKey)
                         Toast.makeText(context, context.getString(R.string.settings_saved), Toast.LENGTH_SHORT).show()
                     }
                 },

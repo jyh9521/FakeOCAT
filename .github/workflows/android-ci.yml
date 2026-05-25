@@ -1,0 +1,39 @@
+name: Android CI
+
+# 当推送到 main/master 分支或发起 Pull Request 时自动运行单元测试
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 配置 Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: 授予 gradlew 执行权限
+        run: chmod +x gradlew
+
+      - name: 运行单元测试
+        run: ./gradlew testDebugUnitTest
+
+      - name: 上传测试报告
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: app/build/reports/tests/

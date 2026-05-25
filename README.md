@@ -2,77 +2,102 @@
 
 **语言 / Languages:** 中文（当前） | [日本語](README.ja.md) | [English](README.en.md)
 
-FakeOCAT 是一款出于个人兴趣复刻自 [OCAT](https://ocat.app/) 的 Android 语言学习聊天应用。
+FakeOCAT 是一款 AI 口语私教 Android 应用，受 [OCAT](https://ocat.app/) 启发，基于个人兴趣独立开发。核心理念是"自带密钥 (BYOK)"——用户需自备 API 密钥即可免费使用全部功能，无需支付任何订阅费用。
 
-开发初衷很简单：我不想再额外支付软件订阅费，所以自己动手做了一个功能相近的 APP。本项目核心主打“自带密钥 (BYOK)”，用户需自备 API 密钥方可使用。
+---
 
-✨ 核心特性
+## 📱 功能特色
 
-·多模型支持：内置 13 家 AI 服务商接口，支持自由切换。
-·语言学习辅助：提供对话发音支持，提升口语与听力体验。
-·内容管理：完善的聊天历史记录与重点内容收藏功能。
+- **🌐 22 种界面语言** — 应用 UI 覆盖简体中文、English、日本語、한국어、Français、Deutsch、Español、Português、Italiano、Nederlands、Svenska、Polski、Čeština、Русский、العربية、हिन्दी、Bahasa Indonesia、עברית、Ελληνικά、Türkçe、Tiếng Việt、ไทย，一键切换即时生效。
+- **🤖 12 家 AI 服务商** — 内置 OpenAI、Anthropic (Claude)、Google (Gemini)、Grok (xAI)、DeepSeek、通义千问、腾讯混元、文心一言、智谱 (GLM)、Kimi (月之暗面)、MiniMax、百川等 API 适配，自由选择切换。
+- **📖 三种学习模式** — "用 X 语怎么说"（中→外翻译）、"什么意思"（外→中解释）、"自由聊天"（开放式对话），覆盖输入输出双向练习。
+- **🔊 TTS 语音朗读** — 支持 AI 回复的文本转语音播放，点击任意句子即可发音，提升听力与口语体验。
+- **🔖 书签收藏** — 一键收藏重要对话片段，收藏与历史记录独立存储，清空聊天历史不影响已收藏内容。
+- **📜 对话历史** — 完整保留历史会话记录，支持按时间回顾与恢复会话上下文。
+- **🎨 Material3 主题** — 基于 Jetpack Compose Material3 构建，支持亮色/暗色主题切换。
 
-⚠️ 免责声明与反馈
+---
 
-虽然应用内集成了 13 家服务商的支持，但受限于个人条件，我目前只有 Gemini 的 API。因此，本项目目前仅对 Gemini 进行了完整测试并保证可用。其他 12 家服务商的代码属于“盲写”且未经测试，如果大家在调用其他 API 时遇到 bug，非常欢迎提交反馈或 PR！
+## 🛠 技术栈
 
-## 功能
+| 类别 | 技术 |
+|------|------|
+| 语言 | Kotlin |
+| UI 框架 | Jetpack Compose + Material3 |
+| 导航 | Navigation Compose |
+| 网络 | OkHttp + SSE（流式响应） |
+| 持久化 | DataStore（偏好设置） + SQLite（Room 风格） |
+| 异步 | Kotlin Coroutines + Flow |
+| 测试 | JUnit + MockK + Turbine + MockWebServer |
+| 构建 | Gradle (Kotlin DSL) + Version Catalog |
 
-- 多服务商 API 接入（OpenAI、Anthropic、Gemini、Grok、DeepSeek、豆包、千问、混元、文心、智谱、Kimi、MiniMax 等）
-- 三种学习模式：`HowToSay`、`WhatMeans`、`FreeChat`
-- Markdown 消息渲染与可点击发音按钮
-- 文本转语音（TTS）朗读
-- 收藏与历史分离存储（清空历史不影响收藏）
-- 主题切换与应用语言切换
+---
 
-## 环境要求
+## 📸 截图
 
-- Android Studio（建议最新稳定版）
-- JDK 17+
-- Android SDK（由 Android Studio 管理）
 
-## 快速开始
 
-1. 克隆项目并用 Android Studio 打开。
-2. 等待 Gradle 同步完成。
-3. 运行 `app` 到设备/模拟器。
-4. 首次进入应用后，在设置页选择服务商并填写 API Key。
+---
 
-可选命令行构建：
+## 🚀 构建指南
 
-```powershell
-cd C:\Users\noway\AndroidStudioProjects\FakeOCAT
-.\gradlew.bat assembleDebug
+### 环境要求
+
+- **Android Studio** — 推荐最新稳定版（Ladybug 或更新）
+- **JDK 17+** — 项目已在 `gradle.properties` 中配置指向 Eclipse Adoptium JDK 25 的路径，您可根据本地环境修改或移除该配置
+- **Android SDK** — 由 Android Studio 自动管理
+
+### 快速开始
+
+```bash
+# 1. 克隆项目
+git clone https://github.com/your-username/FakeOCAT.git
+
+# 2. 用 Android Studio 打开项目目录，等待 Gradle 同步完成
+
+# 3. 连接设备或启动模拟器，点击运行
+
+# 4. 首次启动后，进入「设置」→ 选择 AI 服务商 → 填入 API 密钥
 ```
 
-## 测试
+### 命令行构建
 
-```powershell
-cd C:\Users\noway\AndroidStudioProjects\FakeOCAT
-.\gradlew.bat testDebugUnitTest
+```bash
+# Debug 构建
+./gradlew assembleDebug
+
+# 运行单元测试
+./gradlew testDebugUnitTest
 ```
 
-## 目录结构
+---
 
-- `app/src/main/java/com/example/fakeocat/ui/`：界面与导航
-- `app/src/main/java/com/example/fakeocat/ui/viewmodel/`：状态与业务编排
-- `app/src/main/java/com/example/fakeocat/network/`：LLM/TTS 网络层
-- `app/src/main/java/com/example/fakeocat/data/`：本地配置与数据库
-- `docs/`：设计与集成文档
+## 📁 项目结构
 
-## 开源说明
+```
+FakeOCAT/
+├── app/src/main/java/com/example/fakeocat/
+│   ├── ui/                        # Compose UI 层
+│   │   ├── screens/               # 页面：Chat / Bookmarks / History / Settings
+│   │   ├── components/            # 可复用组件：MarkdownMessage 等
+│   │   ├── viewmodel/             # ViewModel + 业务编排
+│   │   └── theme/                 # Material3 主题配置
+│   ├── network/                   # 网络层：LLM 客户端 / TTS / SSE 流式解析
+│   └── data/                      # 数据层：DataStore 偏好 / SQLite 数据库
+├── app/src/main/res/              # 资源文件（含 22 种语言的 strings.xml）
+├── app/src/test/                  # 单元测试
+├── app/src/androidTest/           # 仪表化测试（Android 设备测试）
+└── docs/                          # 设计与集成文档
+```
 
-- 提交前请确认敏感信息（API Key、签名文件）未入库
-- 项目已提供 `.gitignore`，默认忽略本地与构建产物
+---
 
-## 多语言维护
+## ⚠️ 免责声明
 
-- 默认文档：`README.md`（中文）
-- 其他语言文档：`README.ja.md`、`README.en.md`
-- 更新流程建议：先更新中文，再同步日文与英文，避免内容不一致
-- 如果发现翻译滞后，请以中文版为准并提交修正 PR
+虽然应用内集成了 12 家服务商的代码，但受限于个人条件，目前仅 **Gemini** 经过了完整测试并确保可用。其他 11 家服务商的适配代码为"盲写"实现，未经实际 API 验证。如在使用其他服务商时遇到问题，欢迎提交 Issue 或 Pull Request。
 
-## License
+---
 
-本项目采用 [MIT License](LICENSE)。
+## 📄 许可
 
+本项目采用 [MIT License](LICENSE) 开源。
