@@ -7,6 +7,10 @@ on:
   pull_request:
     branches: [ main, master ]
 
+env:
+  # 覆盖 gradle.properties 中硬编码的 Windows JDK 路径，使用 setup-java 提供的 JDK
+  org.gradle.java.home: ''
+
 jobs:
   lint:
     name: Lint Check
@@ -16,11 +20,19 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: 设置 JDK 17
+      # Gradle 9.x 要求最低 JDK 21；使用 JDK 21 以满足 Gradle 需求
+      # compileOptions 继续指定 Java 17 目标，两者兼容
+      - name: 设置 JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'temurin'
+
+      # 安装 compileSdk 35 所需的 Android SDK 组件
+      - name: 安装 Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-35'
 
       - name: 配置 Gradle
         uses: gradle/actions/setup-gradle@v4
